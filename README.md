@@ -1,190 +1,281 @@
+# Global Terrorism Analysis
+## Predicting the Success of Terrorist Attacks
 
-# Module 3 Final Project
+**Authors**: Jeff Spagnola
 
+The contents of this repository detail an analysis of the module three project of the Flatiron School Data Science program. This analysis is detailed in hopes of making the work accessible and replicable.
 
-## Introduction
+<center><img src="main-image.jpeg" alt="Terrorism Map" height = 250 ></center>
 
-In this lesson, we'll review all the guidelines and specifications for the final project for Module 3.
+### Business problem:
 
+Terrorism is a worldwide problem.  Between 1970 and 2017, there were 181,691 terrorist attacks recorded globally.  Attacks have been recorded on every continent and in over 180 countries.  In the interest of national security, we will analyze terrorist attacks between 1997 and 2017 to figure out the specifc factors that determine whether a terrorist attack will be successeful.  By knowing the patterns, strenghts and weakness of terrorists and terrorist organizations, we can be more prepared to prevent new attacks in the future.  
 
-## Objectives
+Throughout the course of this notebook, we will attempt to determine what factors are most important in ensuring the success of a terrorist attack.  Utilizing the OSEMN data science process, we will analyze the data and then employ various machine learning algorithms to determine the importance of features.  
 
-- Understand all required aspects of the Final Project for Module 3
-- Understand all required deliverables
-- Understand what constitutes a successful project
+ <div class="alert alert-info" role="alert">
+<center><b><u>Defining "Success"</u></b></center>
+<u>According to the Global Terrorist Database: </u><br>
+Success of a terrorist strike is defined according to the tangible effects of the attack.
+Success is not judged in terms of the larger goals of the perpetrators. For example, a
+bomb that exploded in a building would be counted as a success even if it did not
+succeed in bringing the building down or inducing government repression. <br><br>
+The definition of a successful attack depends on the type of attack. Essentially, the
+key question is whether or not the attack type took place. If a case has multiple
+attack types, it is successful if any of the attack types are successful, with the
+exception of assassinations, which are only successful if the intended target is killed.
+    </div>
 
-## Final Project Summary
 
-Congratulations! You've made it through another _intense_ module, and now you're ready to show off your newfound Machine Learning skills!
+### Data
+The data used in this analysis is from the Global Terrorism Database.  This database was compiled by the National Consortium for the Study of Terrorism and Responses to Terrorism.  Aside from coming up with a catchy name for their organization, they've also compiled data on over 180,000 terrorist attacks worldwide between 1997 and 2017.  The full dataset contains 181,691 rows and 135 columns.  
 
-![awesome](https://raw.githubusercontent.com/learn-co-curriculum/dsc-mod-3-project-v2-1/master/smart.gif)
 
-All that remains for Module 3 is to complete the final project!
+## Methods
+This notebook was created using the OSEMN data science method and, below, we will walk through each step of this process as well as share the results.
 
-## The Project
+### Obtain
+The first step in the process, as usual, is to import the Global Terrorism Database using pandas.  The dataset is very large but we decided to import the whole thing and then start to pare it down from there during the scrubbing proces.  The original dataframe is over 180,000 rows and 135 columns.  
 
-The main goal of this project is to create a classification model. For this project you have the choice to either:
+```json
 
-- choose a data set from a curated list
-- choose your own data set _outside_ of the curated list. 
+df = pd.read_csv('global_terrorism.csv', engine = 'python')
+print(df.shape)
+df.head()
 
-The data guidelines for either option are shown below
+```
 
-For this project, you're going to select a dataset of your choosing and create a classification model. You'll start by identifying a problem you can solve with classification, and then identify a dataset. You'll then use everything you've learned about Data Science and Machine Learning thus far to source a dataset, preprocess and explore it, and then build and interpret a classification model that answers your chosen question.
+### Scrub
+Upon initial inspection, there were several methods we were able to use to make the dataset more manageable.  First, we decided to focus on just the most recent 20 years of the dataset (1997-2017) and this brought the number of rows down to just over 117,000.  Several columns were irrelevant to the target, several others were redundant, and many were able to be condensed into a single feature.  The final pruned dataset was 117,381 rows and 42 columns.  
 
-### a. Choosing the data from a curated list
+From here, we split the data into training and testing sets using train_test_split.  
 
-You are allowed to select one of the four data sets described below. Each comes with its own advantages and disadvantages, and, of course, its own associated business problem and stakeholders. It may be desirable to flesh out your understanding of the audience or the business proposition a little more than sketched out here. If you select one of these four data sets, you **need no further approval from your instructor**.
+```json
 
+X = df.drop('success', axis = 1)
+y = df['success']
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 30)
 
-1) [Chicago Car Crash Data](https://data.cityofchicago.org/Transportation/Traffic-Crashes-Crashes/85ca-t3if). Note this links also to [Vehicle Data](https://data.cityofchicago.org/Transportation/Traffic-Crashes-Vehicles/68nd-jvt3) and to [Driver/Passenger Data](https://data.cityofchicago.org/Transportation/Traffic-Crashes-People/u6pd-qa9d).
+```
 
-Build a classifier to predict the primary contributory cause of a car accident, given information about the car, the people in the car, the road conditions etc. You might imagine your audience as a Vehicle Safety Board who's interested in reducing traffic accidents, or as the City of Chicago who's interested in becoming aware of any interesting patterns. Note that there is a **multi-class** classification problem. You will almost certainly want to bin or trim or otherwise limit the number of target categories on which you ultimately predict. Note e.g. that some primary contributory causes have very few samples.
+Next, we separated the training data into numerical and categorical columns as well as created Pipelines to transform the data for modeling.  
 
-2) [Terry Stops Data](https://catalog.data.gov/dataset/terry-stops).
-In [*Terry v. Ohio*](https://www.oyez.org/cases/1967/67), a landmark Supreme Court case in 1967-8, the court found that a police officer was not in violation of the "unreasonable search and seizure" clause of the Fourth Amendment, even though he stopped and frisked a couple of suspects only because their behavior was suspicious. Thus was born the notion of "reasonable suspicion", according to which an agent of the police may e.g. temporarily detain a person, even in the absence of clearer evidence that would be required for full-blown arrests etc. Terry Stops are stops made of suspicious drivers.
+```json
 
-Build a classifier to predict whether an arrest was made after a Terry Stop, given information about the presence of weapons, the time of day of the call, etc. Note that this is a **binary** classification problem.
+num_transformer = Pipeline(steps = [('imputer', KNNImputer(n_neighbors = 2)), ('scaler', StandardScaler())])
+cat_transformer = Pipeline(steps = [
+    ('imputer', SimpleImputer(strategy = 'most_frequent')), 
+    ('encoder', OneHotEncoder(handle_unknown = 'ignore', sparse = False))])
 
-Note that this dataset also includes information about gender and race. You **may** use this data as well. You may, e.g. pitch your project as an inquiry into whether race (of officer or of subject) plays a role in whether or not an arrest is made.
+preprocessing = ColumnTransformer(transformers = [
+    ('num', num_transformer, num_cols),
+    ('cat', cat_transformer, cat_cols)])
 
-If you **do** elect to make use of race or gender data, be aware that this can make your project a highly sensitive one; your discretion will be important, as well as your transparency about how you use the data and the ethical issues surrounding it.
+X_train_trans = preprocessing.fit_transform(X_train)
+X_test_trans = preprocessing.transform(X_test)
 
-3) [Customer Churn Data](https://www.kaggle.com/becksddf/churn-in-telecoms-dataset)
+```
 
-Build a classifier to predict whether a customer will ("soon") stop doing business with SyriaTel, a telecommunications company. Note that this is a **binary** classification problem.
+### Explore
+We employed a variety of plots to find interesting trends within the data.  
 
-Most naturally, your audience here would be the telecom business itself, interested in losing money on customers who don't stick around very long. Are there any predictable patterns here?
+#### Map of  Attempted Terrorist Attacks 
+<center><img src="Terrorism Map.png" alt="Terrorism Map" width = '600' height = '400'></center>
+<div class="alert alert-info" role="alert">
+    Above is a map indicating the location of every terrorist attack from 1970 to 2017.  
+</div>
 
-4) [Tanzanian Water Well Data](https://www.drivendata.org/competitions/7/pump-it-up-data-mining-the-water-table/page/23/) (*active competition*!)
-Tanzania, as a developing country, struggles with providing clean water to its population of over 57,000,000. There are many waterpoints already established in the country, but some are in need of repair while others have failed altogether.
+#### Geographic Region
+<center><img src="geographic-attacks.png" alt="Geographic Location"></center>
+<div class="alert alert-info" role="alert">
+    The plot above shows that an overwhelming majority of terrorist attacks occur in the <b>Middle East/North Africa and South Asia. </b> 
+    </div>
 
-Build a classifier to predict the condition of a water well, using information about the sort of pump, when it was installed, etc. Note that this is a **ternary** classification problem.
+#### Attack Type
+<center><img src="attack-type.png" alt="Attack Type"></center>
+<div class="alert alert-info" role="alert">
+  The plot above shows that an most attempted terrorist attacks are either <b>bombings or armed assaults. </b> 
+</div>
+
+#### Target Type
+<center><img src="target-type.png" alt="Target Type"></center>
+<div class="alert alert-info" role="alert">
+  The plot above shows that the top targets for a terrorist attack are <b>Private Property, Military, Police, Government, and Business.</b>
+</div>
+
+### Model
+The modeling phase was an iterative process where we ran several different types of models in order to determine the best fit for the data.  
+
+#### Logistic Regression
+First on the list is Logistic Regression.  First, we run a base model and then performed a GridSearchCV in order to tune the hyperparameters.  After getting the optimal hyperparameters, we fit a seocnd model and reviewed our results. 
+
+```json
+params = {'class_weight': ['balanced'],
+          'solver': ['lbfgs', 'liblinear'],
+          'C': [1.0, 3.0, 5.0]}
+grid = GridSearchCV(estimator = LogisticRegression(), param_grid = params, cv = 3, n_jobs = -1)
+grid.fit(X_train_trans_df, y_train)
+
+logreg2 = LogisticRegression(class_weight = 'balanced',
+                             C = 1.0,
+                             solver = 'lbfgs')
+logreg2.fit(X_train_trans_df, y_train)
+```
+
+<center><img src="LOGREG-RESULTS.png" alt="Logistic Regression"></center>
+
+#### Decision Tree
+Next, we ran a base decision tree classifier to see if this would return better results.  Again, we then performed a GridSearchCV to find the optimal hyperparameters and then fit a second model.  
+
+```json
+params = {'class_weight': [None, 'balanced'],
+          'criterion': ['gini', 'entropy'],
+          'max_depth': [1, 3, 5], 
+          'min_samples_leaf': [1, 3, 5]}
+grid = GridSearchCV(estimator = DecisionTreeClassifier(), param_grid = params, cv = 3, n_jobs = -1)
+grid.fit(X_train_trans_df, y_train)
+
+decision_tree2 = DecisionTreeClassifier(class_weight = 'balanced', 
+                                        criterion = 'entropy', 
+                                        max_depth = 5, 
+                                        min_samples_leaf = 5)
+decision_tree2.fit(X_train_trans_df, y_train)
+```
+
+<center><img src="DecisionTreeResults.png" alt="Decision Tree"></center>
+
+#### Random Forest
+After the decision tree, we decided to try an ensemble method and used the random forest algorithm.  Once again, we performed a GridSearchCV and fit the model with the tuned hyperparameters.
+
+```json
+params = {'class_weight': [None, 'balanced'],
+          'criterion': ['gini', 'entropy'],
+          'max_depth': [1, 3, 5], 
+          'min_samples_leaf': [1, 5, 10]}
+grid = GridSearchCV(estimator = RandomForestClassifier(), param_grid = params, cv = 3, n_jobs = -1)
+grid.fit(X_train_trans_df, y_train)
+
+random_forest2 = RandomForestClassifier(class_weight = 'balanced', 
+                                        criterion = 'entropy', 
+                                        max_depth = 5, 
+                                        min_samples_leaf = 10)
+random_forest2.fit(X_train_trans_df, y_train)
+```
+
+<center><img src="Random Forest Results.png" alt="Random Forest"></center>
+
+#### XGBoost
+Next, we wanted to experiment with using XGBoost on the data.  In case you're not noticing the pattern yet, we performed a GridSearchCV and fit the model with the tuned hyperparameters.
 
+```json
+params = {'gamma': [0.5, 1, 2, 5],
+          'min_child_weight': [1, 5, 10],
+          'max_depth': [1, 3, 5]}
+grid = GridSearchCV(estimator = xgb.XGBClassifier(), param_grid = params, cv = 3, n_jobs = -1)
+grid.fit(X_train_trans_df, y_train)
 
-### b. Selecting a Data Set _Outside_ of the Curated List
+xgboost2 = xgb.XGBClassifier(gamma = 1,
+                             min_child_weight = 1,  
+                             max_depth = 5)
+xgboost2.fit(X_train_trans_df, y_train)
+```
+<center><img src="XGBoost Results.png" alt="XGBoost"></center>
 
-We encourage you to be very thoughtful when identifying your problem and selecting your data set--an overscoped project goal or a poor data set can quickly bring an otherwise promising project to a grinding halt. **If you are going to choose your own data set, you'll need to run it by your instructor for approval**.
+#### Stacking Ensemble
+The results are very good, but we wanted to see if we would be able to get a bit more accuracy by using a Stacking Ensemble made up of our decision tree, random forest, and XGBoost.  
 
-To help you select an appropriate data set for this project, we've set some guidelines:
+```json
+estimators = [('dt', DecisionTreeClassifier(class_weight = 'balanced', 
+                                            criterion = 'entropy',
+                                            max_depth = 5, 
+                                            min_samples_leaf = 5)),
+              ('rf', RandomForestClassifier(class_weight = 'balanced', 
+                                            criterion = 'entropy', 
+                                            max_depth = 5, 
+                                            min_samples_leaf = 10)), 
+              ('xg', xgb.XGBClassifier(gamma = 1,
+                                       min_child_weight = 1,  
+                                       max_depth = 5))]
 
-1. Your dataset should work for classification. The classification task can be either binary or multiclass, as long as it's a classification model.   
+stack = StackingClassifier(estimators = estimators, cv = 3, n_jobs = -1)
+stack.fit(X_train_trans_df, y_train)
+```
 
-2. Your dataset needs to be of sufficient complexity. Try to avoid picking an overly simple dataset. Try to avoid extremely small datasets, as well as the most common datasets like titanic, iris, MNIST, etc. We want to see all the steps of the Data Science Process in this project--it's okay if the dataset is mostly clean, but we expect to see some preprocessing and exploration. See the following section, **_Data Set Constraints_**, for more information on this.   
+<center><img src="Stacking Results.png" alt="Stacking Classifier"></center>
 
-3. On the other end of the spectrum, don't pick a problem that's too complex, either. Stick to problems that you have a clear idea of how you can use machine learning to solve it. For now, we recommend you stay away from overly complex problems in the domains of Natural Language Processing or Computer Vision--although those domains make use of Supervised Learning, they come with a lot of other special requirements and techniques that you don't know yet (but you'll learn soon!). If you're chosen problem feels like you've overscoped, then it probably is. If you aren't sure if your problem scope is appropriate, double check with your instructor!  
+### Interpret
+In terms of trying to prevent terrorist attacks, it is extremely important that we limit the false negatives in our model.  Therefore, the metric that we chose to use for scoring the model performence is the Recall.  
 
-#### Data Set Constraints
+<center><img src="Recall Scores.png" alt="Recall Scores"></center>
 
-When selecting a data set, be sure to take into consideration the following constraints:
+Though all the models performed well, we can see that XGBoost and the Stacking Classifier performed the best in terms of Recall Score.  Though the Stacking Classifier performed better in other ways, we will be moving forward with the XGBoost model.  The reason for this is that we will be using SHAP for further analysis and at this moment, SHAP does not support Stacking Classifiers.  
 
-1. Your data set can't be one we've already worked with in any labs.
-2. Your data set should contain a minimum of 1000 rows.    
-3. Your data set should contain a minimum of 10 predictor columns, before any one-hot encoding is performed.   
-4. Your instructor must provide final approval on your data set.
+Speaking of SHAP...
 
-#### Problem First, or Data First?
+#### SHAP Summary Bar Plot
+<img src="Shap-summary plot.png" alt="Shap Summary Plot Bar">
+> Bar plot showing the most important features as per SHAP calculations.
 
-There are two ways that you can about getting started: **_Problem-First_** or **_Data-First_**.
+#### SHAP Summary Plot
+<img src="Shap-summaryplot2.png" alt="Shap Summary Plot Dot">
+> Plot that shows the positive and negative affect on the target per each important feature.
 
-**_Problem-First_**: Start with a problem that you want to solve with classification, and then try to find the data you need to solve it.  If you can't find any data to solve your problem, then you should pick another problem.
+#### Model Feature Importances 
+<img src="featureImportances.png" alt="Model Feature Importances">
+> Bar plot showing the most important features as per the feature importances from the model.
 
-**_Data-First_**: Take a look at some of the most popular internet repositories of cool data sets we've listed below. If you find a data set that's particularly interesting for you, then it's totally okay to build your problem around that data set.
+## Results
 
-There are plenty of amazing places that you can get your data from. We recommend you start looking at data sets in some of these resources first:
+ <div class="alert alert-info" role="alert">
+    <b><u>Top 5 Feature Importances from Sklearn </u></b>- targtype1_txt_Unknown, ishostkid, property, nkill, attacktype1_txt_Assassination<br><br>
+<b><u>Top 5 Feature Importances from SHAP</u></b> - nkill, property, nwound, attacktype1_txt_Assassination, ishostkid<br><br>
+    <b><u> Overlapping Important Features </u></b>- nkill, ishostkid, attacktype1_txt_Assassination, property
+ </div>
 
-* [UCI Machine Learning Datasets Repository](https://archive.ics.uci.edu/ml/datasets.html)
-* [Kaggle Datasets](https://www.kaggle.com/datasets)
-* [Awesome Datasets Repo on Github](https://github.com/awesomedata/awesome-public-datasets)
-* [New York City Open Data Portal](https://opendata.cityofnewyork.us/)
-* [Inside AirBNB ](http://insideairbnb.com/)
+<div class="alert alert-success" role="alert">
+    <b><u><center>Overlapping Important Features:</center></u></b><br><br>
+1. <b><u>nkill </u></b>- Total Number of Fatalities - High numbers of fatalities positively affect the success and low numbers of fatalities negatively affect the success of attack.<br><br>
+2. <b><u>ishostkid</u></b> - Hostages or Kidnapping Victims - Very positively affects the success of attack.<br><br>
+3. <b><u>attacktype1_txt_Assassination</u></b> - Attempted Assassination - Very negatively affects the success of attack.<br><br>
+    4. <b><u>property</u></b> - Property Damage (Evidence of property damage from attack) - Slightly positively affects the success of attack.
+    </div>
 
 
-## The Deliverables
+## Recommendations:
 
-For online students, your completed project should contain the following four deliverables:
+<b>Based on the results of this analysis, we can make the following recommnedations: </b>
+ - Maintain high levels of intel and security in the Middle East and South Asia.
+ - Develop better methods and/or technology for bomb detection and disarmament.  
+ - Focus intel on target areas that have the highest concentration of people.
+ - Increase security for high level targets for potential kidnapping or hostage situations.  
 
-1. A **_Jupyter Notebook_** containing any code you've written for this project. This work will need to be pushed to a public GitHub repository dedicated for this project.
 
-2. An organized **README.md** file in the GitHub repository that describes the contents of the repository. This file should be the source of information for navigating through the repository. 
+## Limitations & Next Steps
 
-3. A **_[Blog Post](https://github.com/learn-co-curriculum/dsc-welcome-blogging-v2-1)_**.
+### Future Work
+With more time, we can gain even more insight into what can make a terrorist attack successful in order to create better security measures.  
 
-4. An **_"Executive Summary" PowerPoint Presentation_** that gives a brief overview of your problem/dataset, and each step of the OSEMN process.
+ - Time:  We can increase the range of years of the data in our analysis.  For example, the full dataset ranges from 1970 to 2017.  
+ - Models:  We can increase the size and complexiy of our models in order to increase the accuracy of our results. 
+ - Data:  We can research and compile additonal data from other resources for a more well rounded dataset.  
 
-Note: On-campus students may have different deliverables, please speak with your instructor.
 
-### Jupyter Notebook Must-Haves
+### For further information
+Please review the narrative of our analysis in [our jupyter notebook](./student-Copy2.ipynb) or review our [presentation](./Mod-3 Project Presentation.pdf)
 
-For this project, your Jupyter Notebook should meet the following specifications:
+For any additional questions, please contact **jeff.spags@gmail.com.
 
-**_Organization/Code Cleanliness_**
 
-* The notebook should be well organized, easy to follow, and code is commented where appropriate.  
-    * Level Up: The notebook contains well-formatted, professional looking markdown cells explaining any substantial code. All functions have docstrings that act as professional-quality documentation.  
-* The notebook is written to technical audiences with a way to both understand your approach and reproduce your results. The target audience for this deliverable is other data scientists looking to validate your findings.  
+##### Repository Structure:
 
-**_Process, Methodology, and Findings_**
+Here is where you would describe the structure of your repoistory and its contents, for exampe:
 
-* Your notebook should contain a clear record of your process and methodology for exploring and preprocessing your data, building and tuning a model, and interpreting your results.
-* We recommend you use the OSEMN process to help organize your thoughts and stay on track.
+```
 
-### Blog Post Must-Haves
+├── README.md                       <- The top-level README for reviewers of this project.
+├── student-Copy2.ipynb             <- narrative documentation of analysis in jupyter notebook
+├── Mod-3 Project Presentation.pdf  <- pdf version of project presentation
+└── images
+    └── images                      <- both sourced externally and generated from code
 
-Refer back to the [Blogging Guidelines](https://github.com/learn-co-curriculum/dsc-welcome-blogging-v2-1) for the technical requirements and blog ideas.
-
-## The Process
-
-These steps are informed by Smart Vision's<sup>1</sup> description of the CRISP-DM process.
-
-### 1. Business Understanding
-
-Start by reading this document, and making sure that you understand the kinds of questions being asked.  In order to narrow your focus, you will likely want to make some design choices about your specific audience, rather than addressing all of the "many people" mentioned in the background section.  Do you want to emphasize affordability, investment, or something else?  This framing will help you choose which stakeholder claims to address.
-
-Three things to be sure you establish during this phase are:
-
-1. **Objectives:** what questions are you trying to answer, and for whom?
-2. **Project plan:** you may want to establish more formal project management practices, such as daily stand-ups or using a Trello board, to plan the time you have remaining.  Regardless you should determine the division of labor, communication expectations, and timeline.
-3. **Success criteria:** what does a successful project look like?  How will you know when you have achieved it?
-
-### 2. Data Understanding
-
-Write a script to download the data (or instructions for future users on how to manually download it), and explore it.  Do you understand what the columns mean?  How do the three data tables relate to each other?  How will you select the subset of relevant data?  What kind of data cleaning is required?
-
-It may be useful to generate visualizations of the data during this phase.
-
-### 3. Data Preparation
-
-Through SQL and Pandas, perform any necessary data cleaning and develop a query that pulls in all relevant data for analysis in a linear regression model, including any merging of tables.  Be sure to document any data that you choose to drop or otherwise exclude.  This is also the phase to consider any feature scaling or one-hot encoding required to feed the data into a classification model.
-
-### 4. Modeling
-
-The focus this time is on prediction. Good prediction is a matter of the model generalizing well. Steps we can take to assure good generalization include: testing the model on unseen data, cross-validation, and regularization. What sort of model should you build? A diverse portfolio is probably best. Classification models we've looked at so far include logistic regression, decision trees, bagging, and boosting, each of these with different flavors. You are encouraged to try any or all of these.
-
-### 5. Evaluation
-
-Recall that there are many different metrics we might use for evaluating a classification model. Accuracy is intuitive, but can be misleading, especially if you have class imbalances in your target. Perhaps, depending on you're defining things, it is more important to minimize false positives, or false negatives. It might therefore be more appropriate to focus on precision or recall. You might also calculate the AUC-ROC to measure your model's *discrimination*.
-
-### 6. Deployment
-
-In this case, your "deployment" comes in the form of the deliverables listed above. Make sure you can answer the following questions about your process:
-
- - "How did you pick the question(s) that you did?"
- - "Why are these questions important from a business perspective?"
- - "How did you decide on the data cleaning options you performed?"
- - "Why did you choose a given method or library?"
- - "Why did you select those visualizations and what did you learn from each of them?"
- - "Why did you pick those features as predictors?"
- - "How would you interpret the results?"
- - "How confident are you in the predictive quality of the results?"
- - "What are some of the things that could cause the results to be wrong?"
-
-
-## Grading Rubric 
-
-Online students can find a PDF of the grading rubric for the project [here](https://github.com/learn-co-curriculum/dsc-mod-3-project-v2-1/blob/master/module_3_project_rubric.pdf). _Note: On-campus students may have different requirements, please speak with your instructor._ 
-
-
-## Citation
-
-1. "What is the CRISP-DM Methodology?" Smart Vision Europe. Available at: https://www.sv-europe.com/crisp-dm-methodology/
+```
