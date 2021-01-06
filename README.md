@@ -5,9 +5,7 @@
 
 The contents of this repository detail an analysis of the module three project of the Flatiron School Data Science program. This analysis is detailed in hopes of making the work accessible and replicable.
 
-<center><img src="main-image.jpeg" alt="Terrorism Map" height = 250 ></center>
-
-### Business problem:
+<center><img src="Images/main-image.jpeg" alt="Terrorism Map" height = 250 ></center>
 
 Terrorism is a worldwide problem.  Between 1970 and 2017, there were 181,691 terrorist attacks recorded globally.  Attacks have been recorded on every continent and in over 180 countries.  In the interest of national security, we will analyze terrorist attacks between 1997 and 2017 to figure out the specifc factors that determine whether a terrorist attack will be successeful.  By knowing the patterns, strenghts and weakness of terrorists and terrorist organizations, we can be more prepared to prevent new attacks in the future.  
 
@@ -37,7 +35,7 @@ This notebook was created using the OSEMN data science method and, below, we wil
 ### Obtain
 The first step in the process, as usual, is to import the Global Terrorism Database using pandas.  The dataset is very large but we decided to import the whole thing and then start to pare it down from there during the scrubbing proces.  The original dataframe is over 180,000 rows and 135 columns.  
 
-```json
+```python
 
 df = pd.read_csv('global_terrorism.csv', engine = 'python')
 print(df.shape)
@@ -50,7 +48,7 @@ Upon initial inspection, there were several methods we were able to use to make 
 
 From here, we split the data into training and testing sets using train_test_split.  
 
-```json
+```python
 
 X = df.drop('success', axis = 1)
 y = df['success']
@@ -60,7 +58,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 30)
 
 Next, we separated the training data into numerical and categorical columns as well as created Pipelines to transform the data for modeling.  
 
-```json
+```python
 
 num_transformer = Pipeline(steps = [('imputer', KNNImputer(n_neighbors = 2)), ('scaler', StandardScaler())])
 cat_transformer = Pipeline(steps = [
@@ -80,25 +78,25 @@ X_test_trans = preprocessing.transform(X_test)
 We employed a variety of plots to find interesting trends within the data.  
 
 #### Map of  Attempted Terrorist Attacks 
-<center><img src="Terrorism Map.png" alt="Terrorism Map" width = '600' height = '400'></center>
+<center><img src="Images/Terrorism Map.png" alt="Terrorism Map" width = '600' height = '400'></center>
 <div class="alert alert-info" role="alert">
     Above is a map indicating the location of every terrorist attack from 1970 to 2017.  
 </div>
 
 #### Geographic Region
-<center><img src="geographic-attacks.png" alt="Geographic Location"></center>
+<center><img src="Images/geographic-attacks.png" alt="Geographic Location"></center>
 <div class="alert alert-info" role="alert">
     The plot above shows that an overwhelming majority of terrorist attacks occur in the <b>Middle East/North Africa and South Asia. </b> 
     </div>
 
 #### Attack Type
-<center><img src="attack-type.png" alt="Attack Type"></center>
+<center><img src="Images/attack-type.png" alt="Attack Type"></center>
 <div class="alert alert-info" role="alert">
   The plot above shows that an most attempted terrorist attacks are either <b>bombings or armed assaults. </b> 
 </div>
 
 #### Target Type
-<center><img src="target-type.png" alt="Target Type"></center>
+<center><img src="Images/target-type.png" alt="Target Type"></center>
 <div class="alert alert-info" role="alert">
   The plot above shows that the top targets for a terrorist attack are <b>Private Property, Military, Police, Government, and Business.</b>
 </div>
@@ -109,7 +107,7 @@ The modeling phase was an iterative process where we ran several different types
 #### Logistic Regression
 First on the list is Logistic Regression.  First, we run a base model and then performed a GridSearchCV in order to tune the hyperparameters.  After getting the optimal hyperparameters, we fit a seocnd model and reviewed our results. 
 
-```json
+```python
 params = {'class_weight': ['balanced'],
           'solver': ['lbfgs', 'liblinear'],
           'C': [1.0, 3.0, 5.0]}
@@ -122,12 +120,12 @@ logreg2 = LogisticRegression(class_weight = 'balanced',
 logreg2.fit(X_train_trans_df, y_train)
 ```
 
-<center><img src="LOGREG-RESULTS.png" alt="Logistic Regression"></center>
+<center><img src="Images/LOGREG-RESULTS.png" alt="Logistic Regression"></center>
 
 #### Decision Tree
 Next, we ran a base decision tree classifier to see if this would return better results.  Again, we then performed a GridSearchCV to find the optimal hyperparameters and then fit a second model.  
 
-```json
+```python
 params = {'class_weight': [None, 'balanced'],
           'criterion': ['gini', 'entropy'],
           'max_depth': [1, 3, 5], 
@@ -142,12 +140,12 @@ decision_tree2 = DecisionTreeClassifier(class_weight = 'balanced',
 decision_tree2.fit(X_train_trans_df, y_train)
 ```
 
-<center><img src="DecisionTreeResults.png" alt="Decision Tree"></center>
+<center><img src="Images/DecisionTreeResults.png" alt="Decision Tree"></center>
 
 #### Random Forest
 After the decision tree, we decided to try an ensemble method and used the random forest algorithm.  Once again, we performed a GridSearchCV and fit the model with the tuned hyperparameters.
 
-```json
+```python
 params = {'class_weight': [None, 'balanced'],
           'criterion': ['gini', 'entropy'],
           'max_depth': [1, 3, 5], 
@@ -162,12 +160,12 @@ random_forest2 = RandomForestClassifier(class_weight = 'balanced',
 random_forest2.fit(X_train_trans_df, y_train)
 ```
 
-<center><img src="Random Forest Results.png" alt="Random Forest"></center>
+<center><img src="Images/Random Forest Results.png" alt="Random Forest"></center>
 
 #### XGBoost
 Next, we wanted to experiment with using XGBoost on the data.  In case you're not noticing the pattern yet, we performed a GridSearchCV and fit the model with the tuned hyperparameters.
 
-```json
+```python
 params = {'gamma': [0.5, 1, 2, 5],
           'min_child_weight': [1, 5, 10],
           'max_depth': [1, 3, 5]}
@@ -179,12 +177,12 @@ xgboost2 = xgb.XGBClassifier(gamma = 1,
                              max_depth = 5)
 xgboost2.fit(X_train_trans_df, y_train)
 ```
-<center><img src="XGBoost Results.png" alt="XGBoost"></center>
+<center><img src="Images/XGBoost Results.png" alt="XGBoost"></center>
 
 #### Stacking Ensemble
 The results are very good, but we wanted to see if we would be able to get a bit more accuracy by using a Stacking Ensemble made up of our decision tree, random forest, and XGBoost.  
 
-```json
+```python
 estimators = [('dt', DecisionTreeClassifier(class_weight = 'balanced', 
                                             criterion = 'entropy',
                                             max_depth = 5, 
@@ -201,27 +199,27 @@ stack = StackingClassifier(estimators = estimators, cv = 3, n_jobs = -1)
 stack.fit(X_train_trans_df, y_train)
 ```
 
-<center><img src="Stacking Results.png" alt="Stacking Classifier"></center>
+<center><img src="Images/Stacking Results.png" alt="Stacking Classifier"></center>
 
 ### Interpret
 In terms of trying to prevent terrorist attacks, it is extremely important that we limit the false negatives in our model.  Therefore, the metric that we chose to use for scoring the model performence is the Recall.  
 
-<center><img src="Recall Scores.png" alt="Recall Scores"></center>
+<center><img src="Images/Recall Scores.png" alt="Recall Scores"></center>
 
 Though all the models performed well, we can see that XGBoost and the Stacking Classifier performed the best in terms of Recall Score.  Though the Stacking Classifier performed better in other ways, we will be moving forward with the XGBoost model.  The reason for this is that we will be using SHAP for further analysis and at this moment, SHAP does not support Stacking Classifiers.  
 
 Speaking of SHAP...
 
 #### SHAP Summary Bar Plot
-<img src="Shap-summary plot.png" alt="Shap Summary Plot Bar">
+<img src="Images/Shap-summary plot.png" alt="Shap Summary Plot Bar">
 > Bar plot showing the most important features as per SHAP calculations.
 
 #### SHAP Summary Plot
-<img src="Shap-summaryplot2.png" alt="Shap Summary Plot Dot">
+<img src="Images/Shap-summaryplot2.png" alt="Shap Summary Plot Dot">
 > Plot that shows the positive and negative affect on the target per each important feature.
 
 #### Model Feature Importances 
-<img src="featureImportances.png" alt="Model Feature Importances">
+<img src="Images/featureImportances.png" alt="Model Feature Importances">
 > Bar plot showing the most important features as per the feature importances from the model.
 
 ## Results
@@ -275,7 +273,7 @@ Here is where you would describe the structure of your repoistory and its conten
 ├── README.md                       <- The top-level README for reviewers of this project.
 ├── student-Copy2.ipynb             <- narrative documentation of analysis in jupyter notebook
 ├── Mod-3 Project Presentation.pdf  <- pdf version of project presentation
-└── images
+└── Images
     └── images                      <- both sourced externally and generated from code
 
 ```
